@@ -1,0 +1,136 @@
+[.hidden]
+= Docker
+:source-highlighter: highlightjs
+:revealjs_theme: beige
+:revealjs_progress: false
+:imagesdir: images
+:customcss: /assets/css/custom.css
+
+[.no-border]
+image::https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Docker_%28container_engine%29_logo.svg/610px-Docker_%28container_engine%29_logo.svg.png[]
+
+== Docker là gì
+
+.VM vs Docker
+[cols="50a,50a"]
+|====
+| image::https://www.backblaze.com/blog/wp-content/uploads/2018/06/vms.png[] | image::https://www.backblaze.com/blog/wp-content/uploads/2018/06/containers.png[]
+|====
+
+[.notes]
+--
+. VM sử dụng Hypervisor (OS = supervisor) để điều khiền phần cứng, quản lý các Guesst chạy trên nó OS.
+.. Memory + CPU chạy cho mỗi OS trên nó sẽ tốn
+.. chỉcần một môi trường để chạy ruby version khác với ruby có sẵn trong OS hiện tại ta chúng ta lại tốn cả một khối lượng lớn nguồn tài nguyên cho Guest OS.
+
+. Docker Engine là một process chạy đơn lẽ trên HOST OS.
+.. (Conainer manager) docker daemon sẽ quản lý các tài nguyên và chia sẽ nó với các container
+.. container sẽ chỉ chứa các library và app cần thiết. khi app/library chậy docker engine sẽ là môi trường trung gian để chuyên các lệnh đó về dùng với kernel của Host OS.
+.. chạy chung kernel HOST OS giúp cho container nhỏ và nhẹ hơn so với VM.
+--
+
+== Cơ cấu của Docker
+
+[.no-border]
+image::https://docs.docker.com/engine/images/architecture.svg[width=450]
+
+* sử dụng cơ cấu client-server
+** client sẽ điều khiển server thông qua api
+** server (docker daemon) quản lý các container, image và resource trên máy chủ
+
+== Các khái niệm cơ bản của docker
+[.text-left]
+* image
+* container
+* volume
+* network
+* service
+
+=== image
+** là một dạng file chứa thông tin để tạo ra container.
+** các thông tin nó chứa giống như một file ISO, file install OS nhưng sẽ chỉ là thông tin dưới định dạng của docker
+** Dockerfile là một tập tin để chứa các bước để Docker tạo ra image
+
+[source, docker]
+----
+FROM ruby:2.6.3
+
+RUN gem install compass
+----
+
+[source, shell]
+----
+# docker build -t demo-ruby-compass .
+----
+
+=== container
+* là thực thể được khởi động lên từ image bởi dockerd.
+* Giống như một process điều khiển đc dưới quyền của dockerd.
+
+[source, shell]
+----
+$ docker run -t demo-ruby-compass
+$ docker ps
+$ docker stop "hash hoặc name container"
+$ docker container ls -la
+----
+
+=== service
+
+* dùng nhiều container liên kết với nhau để tạo ra một service phức tạp
+
+[source, docker]
+----
+version: "3.7"
+  drupal:
+    image: drupal:8.6.10-apache
+    ports:
+      - 8888:80
+    links:
+      - drupal-db
+  drupal-db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+----
+
+== Thực tế dùng
+
+* Viết và đọc dc file Dockerfile, docker-compose.yml
+** https://docs.docker.com/engine/reference/builder/
+
+[source, docker]
+----
+# Dockerfile
+FROM    ...tên image gốc cho bản build
+RUN     ...thực hiện câu lệnh trên shell (sh -c câu_lệnh)
+WORKDIR ...thực hiện tạo thư mục và chuyển thư mục thao tác về nơi chỉ định
+CMD     ...câu lệnh thực hiện khi khởi động container
+EXPOSE  ...mở port chỉ định trên container. (để container giao tiếp với nhau or mở port nối thông máy chủ)
+----
+
+=== docker-compose.yml
+* định dạng YAML
+[source, YAML]
+----
+version: "3.7"                      # ... cú pháp cố định khai báo version cho dockerd đọc
+  drupal:                           # ... tên service (container)
+    image: drupal:8.6.10-apache     # ... image gốc để khởi động container service
+    ports:                          # ... nối thông port giữa máy chủ và container
+      - 8888:80                     # ...
+    links:                          # ... liên kết container với nhau (nối database vơi PHP)
+      - drupal-db                   # ...
+  drupal-db:                        # ...
+    image: mysql:5.7                # ...
+    environment:                    # ... khai báo tham sô môi trường
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1 # ...
+----
+
+== Khi nào dùng đến docker
+
+. Tách midleware của các dự án ra khỏi nhau
+** Redis, MySQL
+. Thử một cái gì mới: Drupal, EC2
+. chia nhỏ các chức năng của project đơn giản hoá cài đặt
+** Tamago CMS: PHP + Rails
+. Các server chuyên xử lý job (Batch server)
