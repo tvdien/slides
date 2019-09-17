@@ -132,5 +132,5 @@ version: "3.7"                      # ... cú pháp cố định khai báo versi
 ** Redis, MySQL
 . Thử một cái gì mới: Drupal, EC2
 . chia nhỏ các chức năng của project đơn giản hoá cài đặt
-** Tamago CMS: PHP + Rails
+** CMS: PHP + Rails
 . Các server chuyên xử lý job (Batch server)
